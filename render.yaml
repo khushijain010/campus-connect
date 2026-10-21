@@ -1,0 +1,14 @@
+# Render Blueprint: New > Blueprint > pick this repo. One web service serves the API, Socket.IO chat and the built React app.
+services:
+  - type: web
+    name: campus-connect
+    runtime: node
+    plan: free
+    buildCommand: npm --prefix server install --omit=dev && npm --prefix client install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/meta
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true

@@ -2,6 +2,9 @@
   "name": "campus-connect-server",
   "private": true,
   "version": "1.0.0",
+  "engines": {
+    "node": ">=22.13"
+  },
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.js",

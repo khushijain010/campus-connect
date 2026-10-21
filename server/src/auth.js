@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { q } from './db.js';
 
+// In production the secret must come from the environment; the dev fallback is public, so tokens signed with it could be forged.
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET must be set when NODE_ENV=production');
+}
 const SECRET = process.env.JWT_SECRET || 'campus-connect-dev-secret';
 
 export const signToken = (user) => jwt.sign({ id: user.id }, SECRET, { expiresIn: '7d' });
