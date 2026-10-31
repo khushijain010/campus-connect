@@ -46,7 +46,7 @@ export default function Login() {
           <button className="btn btn-primary btn-lg btn-block" disabled={busy || !email || !password}>{busy ? 'Logging in…' : 'Login'}</button>
           <div className="row" style={{ gap: 12 }}><div className="divider grow" /><span className="tiny faint">or</span><div className="divider grow" /></div>
           <div className="small" style={{ textAlign: 'center' }}>New here? <Link to="/signup" className="see-all">Create your profile</Link></div>
-          <div className="tiny faint" style={{ textAlign: 'center' }}>Demo account: arjunm@cse.iitr.ac.in · password123</div>
+          {/* <div className="tiny faint" style={{ textAlign: 'center' }}>Demo account: arjunm@cse.iitr.ac.in · password123</div>*/}
         </form>
         <Link to="/" className="back-link small" style={{ margin: 0 }}><ArrowLeft size={15} />Back to home</Link>
       </div>
