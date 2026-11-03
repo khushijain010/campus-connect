@@ -51,7 +51,8 @@ export default function CreatePostModal({ onClose, onCreated, kind = 'post', def
   const submit = async () => {
     const fd = new FormData();
     fd.append('kind', kind);
-    fd.append('type', type);
+    // A text post with photos is an image post.
+    fd.append('type', type === 'text' && files.length ? 'image' : type);
     fd.append('content', content);
     if (topic) fd.append('topic', topic);
     if (kind === 'story') fd.append('story_category', storyCategory);
@@ -90,6 +91,7 @@ export default function CreatePostModal({ onClose, onCreated, kind = 'post', def
         <textarea className="textarea" style={{ minHeight: 130, paddingBottom: 40 }} autoFocus value={content} onChange={(e) => setContent(e.target.value)}
           placeholder={kind === 'story' ? 'Tell everyone something about your culture — a dish, a festival, a game…' : type === 'poll' ? 'Ask a question…' : "What's on your mind?"} />
         <div className="row" style={{ position: 'absolute', right: 8, bottom: 8, gap: 2 }}>
+          <button type="button" className="icon-btn sm" onClick={() => fileRef.current.click()} aria-label="Add photos" title="Add photos"><ImageIcon size={18} /></button>
           {kind === 'post' ? <button type="button" className="icon-btn sm" onClick={() => docRef.current.click()} aria-label="Attach file" title="Attach a PDF or document"><Paperclip size={18} /></button> : null}
           <button type="button" className="icon-btn sm" onClick={() => setEmoji((x) => !x)} aria-label="Emoji"><Smile size={18} /></button>
         </div>
@@ -98,6 +100,8 @@ export default function CreatePostModal({ onClose, onCreated, kind = 'post', def
             {EMOJIS.map((e) => <button key={e} type="button" onClick={() => { setContent((c) => c + e); setEmoji(false); }}>{e}</button>)}
           </div>
         ) : null}
+        <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden
+          onChange={(e) => { const picked = [...e.target.files]; setFiles((f) => [...f, ...picked].slice(0, 6)); e.target.value = ''; }} />
         <input ref={docRef} type="file" hidden accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.txt"
           onChange={(e) => { const f = e.target.files[0]; if (f && f.size > 10 * 1024 * 1024) toast('Documents must be under 10 MB', 'error'); else if (f) setDoc(f); e.target.value = ''; }} />
       </div>
@@ -171,7 +175,6 @@ export default function CreatePostModal({ onClose, onCreated, kind = 'post', def
               <ImageIcon size={20} /><span className="tiny">Add photo</span>
             </button>
           ) : null}
-          <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { setFiles((f) => [...f, ...e.target.files].slice(0, 6)); e.target.value = ''; }} />
         </div>
       ) : null}
 

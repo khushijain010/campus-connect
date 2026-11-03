@@ -176,6 +176,7 @@ export default function PostCard({ post, onChange, onDelete, compact, bare }) {
           {imgs.slice(0, 4).map((src) => <Img key={src} src={src} />)}
         </div>
       ) : null}
+      {post.meta?.credit ? <div className="tiny faint" style={{ marginTop: 6 }}>Photo: {post.meta.credit}</div> : null}
       <div className="post-actions">
         <button className={`post-action ${post.upvoted ? 'on-red' : ''}`} onClick={upvote} aria-pressed={post.upvoted} title="Upvote" aria-label="Upvote">
           <Heart size={18} fill={post.upvoted ? 'currentColor' : 'none'} />{post.upvotes}
@@ -205,6 +206,7 @@ export function StoryCard({ post, onChange }) {
       <div style={{ padding: '0 14px 8px', cursor: 'pointer' }} onClick={() => nav(`/post/${post.id}`)}>
         <div className="bold small" style={{ marginBottom: 4 }}>{post.story_category}</div>
         {post.images?.[0] ? <Img src={post.images[0]} /> : <p className="small muted clamp-2">{post.content}</p>}
+        {post.meta?.credit ? <div className="tiny faint" style={{ marginTop: 4 }}>Photo: {post.meta.credit}</div> : null}
         {post.images?.[0] ? <p className="small muted clamp-2" style={{ marginTop: 6 }}>{post.content}</p> : null}
       </div>
       <div className="post-actions" style={{ padding: '0 8px 6px', marginTop: 'auto' }}>

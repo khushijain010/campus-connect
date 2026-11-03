@@ -32,7 +32,7 @@ await step('login (dark)', async () => {
   await page.fill('input[type=email]', 'arjunm@cse.iitr.ac.in'); await page.fill('input[type=password]', 'password123');
   await page.getByRole('button', { name: 'Login', exact: true }).click(); await page.locator('article').first().waitFor();
 });
-for (const [path, n, wait] of [['/', 'd-home'], ['/culture', 'd-culture', '.fan-card'], ['/discover', 'd-discover', '.poster'], ['/personal', 'd-personal'], ['/u/riya.s', 'd-profile'], ['/post/1', 'd-post'], ['/activity/1', 'd-activity']]) {
+for (const [path, n, wait] of [['/', 'd-home'], ['/culture', 'd-culture', '.billboard-photo'], ['/discover', 'd-discover', '.poster'], ['/personal', 'd-personal'], ['/u/riya.s', 'd-profile'], ['/post/1', 'd-post'], ['/activity/1', 'd-activity']]) {
   await step(n, async () => { await page.goto(BASE + path); if (wait) await page.locator(wait).first().waitFor(); await shot(n); });
 }
 await step('discover poster hover (dark)', async () => {

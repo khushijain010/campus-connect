@@ -42,6 +42,18 @@ function seedPhoto(name) {
   return `/uploads/${name}`;
 }
 
+// Commons licences require credit; shown under the photo. Full details in seed-assets/CREDITS.md.
+const COMMONS_CREDITS = {
+  'iitr-main-flowers.jpg': 'pradeepsz', 'iitr-main-lawn.jpg': 'Kbhardwaj13', 'iitr-main-diwali.jpg': 'Vishalnagula', 'thomso-22-exhibition.jpg': 'Mirazeichner',
+  'thomso-footloose.jpg': 'apsdehal', 'thomso-wargasm.jpg': 'apsdehal', 'story-appam.jpg': 'Triv.rao', 'story-lohri.jpg': 'Satish Krishnamurthy',
+  'story-pongal.jpg': 'Ssuranjna', 'story-tagore.jpg': 'Biswarup Ganguly', 'story-gamosa.jpg': 'Priyankoo', 'story-hanami.jpg': 'Vickerman625',
+  'story-momos.jpg': 'Souradeep Roy', 'story-chhath.jpg': 'Pustam.EGR',
+};
+const commonsPhotos = (...files) => ({
+  images: files.map(seedPhoto),
+  meta: { credit: `${[...new Set(files.map((f) => COMMONS_CREDITS[f]))].join(', ')} / Wikimedia Commons` },
+});
+
 export const DEMO_PASSWORD = 'password123';
 export const DEMO_EMAIL = 'arjunm@cse.iitr.ac.in';
 
@@ -579,7 +591,7 @@ export function seed() {
       return Number(info.lastInsertRowid);
     };
     const pid = [];
-    pid.push(post('riya', 2, 'Arts', 'Just finished the photography walk! Met some amazing people from different departments and got some shots I’m actually happy with. ✨', { tags: ['Photography'] }));
+    pid.push(post('riya', 2, 'Arts', 'Just finished the photography walk! Met some amazing people from different departments. The Main Building never gets old. ✨', { ...commonsPhotos('iitr-main-flowers.jpg', 'iitr-main-lawn.jpg'), tags: ['Photography'] }));
     pid.push(post('kabir', 4, 'Academics', 'Working on the SDR lab today. Anyone interested in discussing the reports together? Let’s form a small group!', { type: 'discussion', tags: ['DSP', 'Electronics'] }));
     const notes = writeDemoPdf('systems-design-notes.pdf', ['System Design Basics', '1. Load balancers and horizontal scaling', '2. Caching: CDN, Redis, cache invalidation', '3. Databases: SQL vs NoSQL, sharding, replication', '4. Queues and async processing', '5. Back-of-the-envelope estimation', 'Shared by Rohan Gupta on Campus Connect']);
     pid.push(post('rohan', 4.5, 'Tech', 'Sharing some notes on system design basics, might be useful for interviews and projects.', { meta: { file: notes }, tags: ['SystemDesign', 'Internship', 'CP'] }));
@@ -606,17 +618,17 @@ export function seed() {
     pid.push(post('tenzin', 100, 'Sports', 'Morning cycling group is growing — 8 riders last Sunday!', { tags: ['Cycling'], community: 'Cycling Group' }));
 
     // Cultural cards / mini stories
-    const story = (user, hours, cat, content, tags) => pid.push(post(user, hours, 'Culture', content, { kind: 'story', story: cat, tags }));
-    story('ananya', 8, 'Food From My Home', 'Appam with stew is Kerala’s answer to comfort food — lacy edges, soft centre and coconut-milk stew for Sunday breakfasts.', ['Food', 'Kerala']);
-    story('karan', 14, 'Festival Stories', 'Lohri nights: bonfires, popcorn, rewri and everyone singing “Sunder Mundriye” around the fire.', ['Festivals', 'Punjab']);
-    story('sneha', 22, 'Did You Know', 'Did you know? Pongal is celebrated over four days, and the dish is named after the festival — “pongal” means “to boil over”.', ['Festivals', 'Tamil Nadu']);
+    const story = (user, hours, cat, content, tags, file) => pid.push(post(user, hours, 'Culture', content, { kind: 'story', story: cat, tags, ...(file ? commonsPhotos(file) : {}) }));
+    story('ananya', 8, 'Food From My Home', 'Appam with stew is Kerala’s answer to comfort food — lacy edges, soft centre and coconut-milk stew for Sunday breakfasts.', ['Food', 'Kerala'], 'story-appam.jpg');
+    story('karan', 14, 'Festival Stories', 'Lohri nights: bonfires, popcorn, rewri and everyone singing “Sunder Mundriye” around the fire.', ['Festivals', 'Punjab'], 'story-lohri.jpg');
+    story('sneha', 22, 'Did You Know', 'Did you know? Pongal is celebrated over four days, and the dish is named after the festival — “pongal” means “to boil over”.', ['Festivals', 'Tamil Nadu'], 'story-pongal.jpg');
     story('priya', 30, 'Traditional Games', 'Gilli-danda was our summer-vacation cricket in Rajasthan. Two sticks, endless arguments about whether it was out.', ['Games', 'Rajasthan']);
-    story('meerad', 34, 'Local Music', 'Rabindrasangeet is the soundtrack of every Bengali home — Tagore wrote over 2,000 songs!', ['Music', 'Bengal']);
-    story('lalit', 48, 'Regional Traditions', 'The Gamosa — a white cloth with red borders — is gifted in Assam as a mark of respect. You’ll see it at every Bihu.', ['Traditions', 'Assam']);
-    story('aiko', 56, 'Festival Stories', 'Hanami: we picnic under cherry blossoms every spring. The blooms last only a week, so everyone rushes out!', ['Festivals', 'Japan']);
+    story('meerad', 34, 'Local Music', 'Rabindrasangeet is the soundtrack of every Bengali home — Tagore wrote over 2,000 songs!', ['Music', 'Bengal'], 'story-tagore.jpg');
+    story('lalit', 48, 'Regional Traditions', 'The Gamosa — a white cloth with red borders — is gifted in Assam as a mark of respect. You’ll see it at every Bihu.', ['Traditions', 'Assam'], 'story-gamosa.jpg');
+    story('aiko', 56, 'Festival Stories', 'Hanami: we picnic under cherry blossoms every spring. The blooms last only a week, so everyone rushes out!', ['Festivals', 'Japan'], 'story-hanami.jpg');
     story('minji', 66, 'Food From My Home', 'Kimchi-making (kimjang) is a family event every November — dozens of cabbages, all hands on deck.', ['Food', 'Korea']);
-    story('tenzin', 76, 'Food From My Home', 'Momos in Sikkim come with a fiery tomato-chilli achar. Thukpa on a cold evening is unbeatable.', ['Food', 'Sikkim']);
-    story('neha', 86, 'Regional Traditions', 'Chhath Puja: offering prayers to the setting and rising sun from the riverbank. The thekua is the best part!', ['Festivals', 'Bihar']);
+    story('tenzin', 76, 'Food From My Home', 'Momos in Sikkim come with a fiery tomato-chilli achar. Thukpa on a cold evening is unbeatable.', ['Food', 'Sikkim'], 'story-momos.jpg');
+    story('neha', 86, 'Regional Traditions', 'Chhath Puja: offering prayers to the setting and rising sun from the riverbank. The thekua is the best part!', ['Festivals', 'Bihar'], 'story-chhath.jpg');
 
     // Upvotes, saves and comments
     const userKeys = Object.keys(id);
@@ -694,6 +706,19 @@ export function seed() {
       ['tenzin', 'In. This reminds me of walking back home in Sikkim except less uphill.', 16],
       ['aiko', 'Is it safe to come if I do not know the route?', 15],
       ['lalit', 'nobody knows the route, that is the plan. it is on discover if you want to join', 14, 1],
+    ]);
+
+    moment('neha', 66, 'Culture', 'someone shared these old thomso photos from around 2010 and the energy was already like this?? the footloose crew in the masks is sending me', { ...commonsPhotos('thomso-footloose.jpg', 'thomso-wargasm.jpg'), tags: ['Thomso', 'Culture'], community: 'Cultural Council' }, 15, [
+      ['karan', 'Imagine telling them the stage would get even bigger', 64],
+      ['ananya', 'Those masks are terrifying. I love them.', 60],
+    ]);
+    moment('lalit', 22, 'Culture', 'someone once wrote HAPPY DIWALI in light in front of the main building and i have not stopped thinking about it. can we do this on the 8th? i have a phone torch and no experience', { ...commonsPhotos('iitr-main-diwali.jpg'), tags: ['Diwali', 'Festivals', 'Culture'] }, 18, [
+      ['dev', 'Long exposure on a tripod. I have one, I will bring it.', 20],
+      ['neha', 'i will be the letter D', 19],
+      ['lalit', 'we have a team', 18.5, 1],
+    ]);
+    moment('ishita', 88, 'Arts', 'Looking back at the Daniel Garbade exhibition from Thomso ’22. Fine Arts people, can we get something this bold on campus again?', { ...commonsPhotos('thomso-22-exhibition.jpg'), tags: ['Art', 'Thomso'], community: 'Fine Arts Section' }, 9, [
+      ['priya', 'Yes please. I would help paint.', 80],
     ]);
 
     // Team-up threads

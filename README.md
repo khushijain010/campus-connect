@@ -47,7 +47,7 @@ Every seeded user has the same password. Emails follow the IITR format `<handle 
 | Global search (people, posts, communities, events) with recent searches | `components/Layout.jsx`, `pages/SearchPage.jsx` |
 | Profile view: info, interests, hobbies, cultural info; Add Friend / Message / Block / Report; match % | `pages/Profile.jsx`, `routes/users.js` |
 | Reviews / testimonials (anonymous, from post-event surveys) | Home right rail, `GET /api/testimonials` |
-| **Culture:** Netflix-style page: Culture of the Week billboard with a 3D topic-card fan, then sliding rows. Culture profile, Step Outside Your Circle (match-on chips, Connect/Skip), Cultural Buddy (Learn/Teach/Experience/Connect), cultural exchange events, Teach Me Something, cultural communities, cultural stories (like/comment/share/save), Culture of the Week, icebreakers | `pages/Culture.jsx`, `routes/culture.js` |
+| **Culture:** Netflix-style page: Culture of the Week billboard with a photo of that culture, then sliding rows. Culture profile, Step Outside Your Circle (match-on chips, Connect/Skip), Cultural Buddy (Learn/Teach/Experience/Connect), cultural exchange events, Teach Me Something, cultural communities, cultural stories (like/comment/share/save), Culture of the Week, icebreakers | `pages/Culture.jsx`, `routes/culture.js` |
 | **Discover:** Netflix-style sliding rows of interactive 3D poster cards. Search + categories, filters (time, date, location, group size, level, department), study partners, project teams, sports groups, Add Event template, general communities, Recommended For You | `pages/Discover.jsx`, `routes/activities.js` |
 | Block / report on profiles, posts, groups, communities and messages | `components/ReportModal.jsx` |
 | **Personal:** profile + edit, friends (view/message/remove), friend requests, communities (open/leave), your events with Manage Applications, applications with status, upcoming and past events with Submit Feedback | `pages/Personal.jsx`, `pages/EditProfile.jsx` |
@@ -85,7 +85,7 @@ Build: `npm --prefix server install --omit=dev && npm --prefix client install --
 
 - Email rule: IIT Roorkee addresses, where the subdomain is the department (`khushi@ece.iitr.ac.in`; any subdomain is accepted). Only `iitr.ac.in` addresses are accepted (`ALLOWED_EMAIL_SUFFIXES` in `server/src/constants.js` (mirrored in `client/src/lib/college.js`). Accounts created with the old `@iit.ac.in` form are migrated automatically when the server starts (`migrateLegacyEmails` in `db.js`).
 - Departments: the 23 IIT Roorkee departments (`IITR_DEPARTMENTS` in `constants.js`), each with email codes used to pre-select the department at signup.
-- Seed data is sample content. Club names and fest dates are real IIT Roorkee details, but the users, memberships, sign-ups, comments and reviews are made up. Photos in `server/seed-assets/` are copied into uploads when seeding.
+- Seed data is sample content. Club names and fest dates are real IIT Roorkee details, but the users, memberships, sign-ups, comments and reviews are made up. Photos in `server/seed-assets/` are copied into uploads when seeding. Wikimedia Commons photos are credited in `server/seed-assets/CREDITS.md`.
 - Communities and events use emoji + colour covers. Avatars fall back to coloured initials.
 - Uploaded images are stored in `server/uploads/` (max 5 MB, images only). The database is `server/data/campus.db`.
 - `docs/` holds the original UI mockups.

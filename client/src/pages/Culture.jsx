@@ -9,7 +9,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useToast } from '../lib/toast.jsx';
 import { Avatar, Empty, Spinner, useApi } from '../components/ui.jsx';
 import Row from '../components/Row.jsx';
-import { ActivityCard, CommunityTile, useTilt } from '../components/cards.jsx';
+import { ActivityCard, CommunityTile } from '../components/cards.jsx';
 import { StoryCard } from '../components/PostCard.jsx';
 import CreatePostModal from '../components/CreatePostModal.jsx';
 import AddEventModal from '../components/AddEventModal.jsx';
@@ -17,24 +17,17 @@ import { openDm } from './Profile.jsx';
 
 const TOPIC_EMOJI = { Food: '🍲', Festivals: '🎉', Music: '🎶', Dance: '💃', Language: '🗣️', Languages: '🗣️', Traditions: '🪔', Art: '🎨', Arts: '🎨', Clothing: '🧣', Attire: '🧣', Sports: '🏏' };
 
-/** Three topic cards fanned out in 3D; they spread on hover and the stack leans toward the cursor. */
-function TopicFan({ topics }) {
-  const tilt = useTilt(16);
-  const cards = topics.slice(0, 3);
-  return (
-    <div className="fan" {...tilt} aria-hidden="true">
-      <div className="fan-stage">
-        {cards.map(([k, items], i) => (
-          <div key={k} className="fan-card" style={{ '--i': i - (cards.length - 1) / 2, '--z': i === 1 ? 40 : 0, zIndex: i === 1 ? 2 : 1 }}>
-            <span className="fan-emoji">{TOPIC_EMOJI[k] || '✨'}</span>
-            <b>{k}</b>
-            <small>{items.join(' · ')}</small>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// Billboard photos from Wikimedia Commons (full credits in server/seed-assets/CREDITS.md).
+const CULTURE_PHOTOS = {
+  'Northeast India': ['northeast.jpg', 'Samudra Bikash Hazarika'],
+  'South India': ['south-india.jpg', 'Madhuranthakan Jagadeesan'],
+  Japan: ['japan.jpg', 'Basile Morin'],
+  Punjab: ['punjab.jpg', 'Oleg Yunakov'],
+  Bengal: ['bengal.jpg', 'Subhrajyoti07'],
+  Kerala: ['kerala.jpg', 'Vyacheslav Argenberg'],
+  Rajasthan: ['rajasthan.jpg', 'Pinakpani'],
+  Korea: ['korea.jpg', 'Frank Schulenburg'],
+};
 
 function CultureOfWeek() {
   const [offset, setOffset] = useState(0);
@@ -44,10 +37,11 @@ function CultureOfWeek() {
   if (loading && !c) return <div className="billboard skeleton" />;
   if (!c) return null;
   const topics = Object.entries(c.topics).filter(([k]) => k !== 'regions');
+  const [photo, credit] = CULTURE_PHOTOS[c.name] || [];
   return (
     <section className="stack" style={{ gap: 0 }}>
       <div className="billboard" style={{ '--c': c.color }}>
-        <span className="billboard-mark" aria-hidden="true">{c.emoji}</span>
+        {photo ? <img key={photo} className="billboard-photo" src={`/culture/${photo}`} alt="" /> : <span className="billboard-mark" aria-hidden="true">{c.emoji}</span>}
         <div className="nav">
           <button onClick={() => setOffset(offset - 1)} aria-label="Previous culture"><ChevronLeft size={18} /></button>
           <button onClick={() => setOffset(offset + 1)} aria-label="Next culture"><ChevronRight size={18} /></button>
@@ -60,7 +54,7 @@ function CultureOfWeek() {
           <div className="chips">{topics.map(([k]) => <span key={k} className="pill sm">{k}</span>)}<span className="pill sm">Student Stories</span></div>
           <div style={{ marginTop: 6 }}><button className="btn btn-white" onClick={() => setOpen(!open)}>{open ? 'Hide details' : 'Explore Culture'} <ArrowRight size={16} /></button></div>
         </div>
-        <TopicFan topics={topics} />
+        {credit ? <span className="billboard-credit">Photo: {credit} / Wikimedia Commons</span> : null}
       </div>
       {open ? (
         <div className="card card-pad stack" style={{ marginTop: 12 }}>

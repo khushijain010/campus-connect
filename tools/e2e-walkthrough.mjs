@@ -88,7 +88,7 @@ await step('culture page', async () => {
   await page.goto(BASE + '/culture'); await page.locator('.card-title', { hasText: 'Step Outside Your Circle' }).waitFor(); await page.waitForTimeout(900); await shot('13-culture');
   await page.getByRole('button', { name: 'Find Buddy' }).click(); await page.getByText(/buddies to learn/).waitFor();
   await page.getByRole('button', { name: /Explore culture/i }).click();
-  await page.locator('.fan-card').first().waitFor();
+  await page.locator('.billboard-photo').first().waitFor();
   await page.getByRole('heading', { name: 'Teach Me Something' }).waitFor();
   await page.getByRole('button', { name: /Scroll Cultural Exchange Events right/ }).click();
   await page.waitForTimeout(600);
