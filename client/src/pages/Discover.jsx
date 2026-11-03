@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Search, SlidersHorizontal, X, Sparkles, BookOpen, Hammer, Trophy, Users2, CalendarDays, UserRoundSearch } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal, X, Sparkles, BookOpen, Hammer, Trophy, Users2, CalendarDays, UserRoundSearch, History } from 'lucide-react';
 import { api, qs } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import { Empty, Spinner, useApi } from '../components/ui.jsx';
@@ -57,6 +57,7 @@ export default function Discover() {
   const sports = useActivities('sports', reloadKey);
   const events = useActivities('event', reloadKey);
   const comms = useApi(() => api.get(`/communities${qs({ category: commCat })}`), [commCat]);
+  const recent = useApi(() => api.get(`/activities${qs({ status: 'completed' })}`), [reloadKey]);
 
   const toggleFilter = (key, v) => setFilters((f) => {
     const cur = f[key] || [];
@@ -150,6 +151,7 @@ export default function Discover() {
             action={<button className="btn btn-soft btn-sm" onClick={() => setAdding('Project')}><Plus size={15} />Start a project</button>} />
           <ActivityRowSection h={sports} title="Sports / Activity Groups" icon={Trophy} sub="Football, cricket, basketball, badminton, cycling, running" />
           <ActivityRowSection h={events} title="Events & Hobbies" icon={CalendarDays} sub="Photowalks, game nights, workshops and more" />
+          <ActivityRowSection h={recent} title="Recently Happened" icon={History} sub="Fests, tournaments and hangouts from the last few weeks" empty="Nothing here yet." />
           <Row id="communities" title="General Communities" icon={Users2} sub="Permanent communities based on interests and activities" size="sm"
             action={(
               <select className="select" style={{ height: 36, width: 'auto', borderRadius: 999 }} value={commCat} onChange={(e) => setCommCat(e.target.value)} aria-label="Community category">

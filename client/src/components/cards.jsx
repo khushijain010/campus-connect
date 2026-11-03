@@ -114,7 +114,7 @@ export function ActivityCard({ activity, onChange, showReason = true }) {
               {a.kind === 'project' && a.looking_for?.length ? <div className="tiny"><span className="muted">Looking for </span>{a.looking_for.join(', ')}</div> : null}
               {showReason && a.reasons?.length ? <span className="reason"><Sparkles size={11} /><span className="ellipsis">{a.reasons[0]}</span></span> : null}
               <div className="cap-bar" title={`${a.participants} of ${a.capacity} spots taken`}><i style={{ width: `${fill}%` }} /></div>
-              <div className="tiny muted">{a.participants}/{a.capacity} going{a.openings > 0 ? ` · ${a.openings} spots left` : ''}</div>
+              <div className="tiny muted">{a.status === 'completed' ? `${a.participants} went` : `${a.participants}/${a.capacity} going${a.openings > 0 ? ` · ${a.openings} spots left` : ''}`}</div>
               <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 4 }}><JoinButton activity={a} onChange={onChange} block /></div>
             </div>
           </div>

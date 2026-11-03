@@ -99,7 +99,7 @@ export const OPTIONS = {
     Experience: ['Food', 'Festivals', 'Games', 'Music'],
     Connect: ['Regional', 'National', 'International'],
   },
-  communityCategories: ['Academic', 'Hobbies', 'Entertainment', 'Sports', 'Culture'],
+  communityCategories: ['Academic', 'Hobbies', 'Entertainment', 'Sports', 'Culture', 'Student Bodies'],
 };
 
 export const ICEBREAKERS = [

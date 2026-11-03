@@ -112,7 +112,8 @@ function activityContext(me) {
 export function listActivities(me, query = {}) {
   completePastActivities();
   const hidden = hiddenIds(me.id);
-  let rows = q.all(`${ACT_SELECT} WHERE a.status = 'open' ORDER BY a.date, a.time`, { me: me.id })
+  const sql = query.status === 'completed' ? "WHERE a.status = 'completed' ORDER BY a.date DESC, a.time" : "WHERE a.status = 'open' ORDER BY a.date, a.time";
+  let rows = q.all(`${ACT_SELECT} ${sql}`, { me: me.id })
     .filter((a) => !hidden.has(a.creator_id)).map(shapeActivity);
 
   const list = (v) => (v ? String(v).split(',').filter(Boolean) : []);

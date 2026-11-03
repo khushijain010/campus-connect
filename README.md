@@ -85,6 +85,7 @@ Build: `npm --prefix server install --omit=dev && npm --prefix client install --
 
 - Email rule: IIT Roorkee addresses, where the subdomain is the department (`khushi@ece.iitr.ac.in`; any subdomain is accepted). Only `iitr.ac.in` addresses are accepted (`ALLOWED_EMAIL_SUFFIXES` in `server/src/constants.js` (mirrored in `client/src/lib/college.js`). Accounts created with the old `@iit.ac.in` form are migrated automatically when the server starts (`migrateLegacyEmails` in `db.js`).
 - Departments: the 23 IIT Roorkee departments (`IITR_DEPARTMENTS` in `constants.js`), each with email codes used to pre-select the department at signup.
-- Seed post photos load from picsum.photos. If they can't load (for example, when offline), the app shows a placeholder. Communities and events use emoji + colour covers. Avatars fall back to coloured initials.
+- Seed data is sample content. Club names and fest dates are real IIT Roorkee details, but the users, memberships, sign-ups, comments and reviews are made up. Photos in `server/seed-assets/` are copied into uploads when seeding.
+- Communities and events use emoji + colour covers. Avatars fall back to coloured initials.
 - Uploaded images are stored in `server/uploads/` (max 5 MB, images only). The database is `server/data/campus.db`.
 - `docs/` holds the original UI mockups.

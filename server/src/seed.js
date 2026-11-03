@@ -30,6 +30,18 @@ function writeDemoPdf(name, lines) {
   return { url: `/uploads/${name}`, name, size: Buffer.byteLength(pdf), type: 'PDF' };
 }
 
+// Real campus photos ship in server/seed-assets and are copied into uploads when seeding.
+const SEED_ASSETS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'seed-assets');
+function seedPhoto(name) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  const target = path.join(UPLOAD_DIR, name);
+  // Parallel test workers seed at once, and Windows locks a file while another process copies it.
+  if (!fs.existsSync(target)) {
+    try { fs.copyFileSync(path.join(SEED_ASSETS, name), target); } catch (e) { if (e.code !== 'EBUSY') throw e; }
+  }
+  return `/uploads/${name}`;
+}
+
 export const DEMO_PASSWORD = 'password123';
 export const DEMO_EMAIL = 'arjunm@cse.iitr.ac.in';
 
@@ -42,7 +54,9 @@ const pad = (n) => String(n).padStart(2, '0');
 const sqlTime = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 const hoursAgo = (h) => sqlTime(new Date(Date.now() - h * 3.6e6));
 const dayOffset = (days) => { const d = new Date(); d.setDate(d.getDate() + days); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
-const img = (key, w = 800, h = 600) => `https://picsum.photos/seed/cc-${key}/${w}/${h}`;
+// Offsets for events with a fixed calendar date, so they stay correct whenever the seed runs.
+const on = (date) => Math.round((new Date(`${date}T00:00:00`) - new Date(new Date().setHours(0, 0, 0, 0))) / 864e5);
+const hoursSince = (iso) => (Date.now() - new Date(iso).getTime()) / 3.6e6;
 const J = JSON.stringify;
 
 const USERS = [
@@ -175,6 +189,134 @@ const COMMUNITIES = [
   ['World Music', 'Culture', 1, ['Music', 'Culture', 'Folk'], '🌍', '#0f766e', 'Folk, classical and everything global.'],
 ];
 
+// IIT Roorkee's real clubs and sections. Names come from iitr.ac.in (Campus Life > Student Groups / Clubs), the
+// Discovr portal and the clubs' Instagram profiles (November 2026). Memberships below are demo data.
+const IITR_CLUBS = [
+  ['SDSLabs', 'Academic', 0, ['React', 'Python', 'Hackathon'], '💡', '#2563eb', 'Student run technical group at IITR. Think. Build. Ship.'],
+  ['MDG Space', 'Academic', 0, ['React', 'Figma', 'Hackathon'], '📲', '#0d9488', 'Student group building software at IITR. Ideas x Reality.'],
+  ['Information Management Group (IMG)', 'Academic', 0, ['React', 'Python'], '🖧', '#0369a1', 'Technical solutions, tools and web applications for the institute.'],
+  ['ACM Student Chapter', 'Academic', 0, ['CP', 'DSA', 'C++'], '⌨️', '#1d4ed8', 'IIT Roorkee student chapter of ACM, under the Student Technical Council.'],
+  ['Google Developer Student Club IITR', 'Academic', 0, ['React', 'Python', 'AI/ML'], '🧑‍💻', '#16a34a', 'Developer community for students who like learning by building.'],
+  ['IEEE Student Branch', 'Academic', 0, ['Electronics', 'Research'], '📟', '#1e40af', 'Educational, technical and professional events.'],
+  ['Models and Robotics Section (MaRS)', 'Academic', 0, ['Robotics', 'Arduino'], '🤖', '#b91c1c', 'The official robotics club of IIT Roorkee.'],
+  ['Programming and Algorithms Group (PAG)', 'Academic', 0, ['CP', 'DSA', 'C++'], '🧮', '#0ea5e9', 'Nurturing the coding culture of IIT Roorkee through open lectures and contests like Insomnia and CodeBlitz.'],
+  ['Physics and Astronomy Club (PaAC)', 'Academic', 0, ['Research', 'Mathematics'], '🔭', '#312e81', 'Physics, astronomy and maths-lovers. In the dead of night, we wish you #clearskies.'],
+  ['Data Science Group (DSG)', 'Academic', 0, ['AI/ML', 'ML', 'Python'], '📊', '#7c3aed', 'Code. Train. Predict.'],
+  ['HELIOS', 'Academic', 0, ['Research', 'Robotics'], '🛰️', '#1e293b', 'Hub for Engineering, Learning and Innovation in Outer-space Systems: the space science and technology club.'],
+  ['Team Robocon IIT Roorkee', 'Academic', 0, ['Robotics', 'Arduino'], '🦾', '#be123c', 'IIT Roorkee\'s Robocon team.'],
+  ['Economics Circle', 'Academic', 0, ['Finance', 'Research'], '💹', '#047857', 'The economics community of IIT Roorkee.'],
+  ['Metallurgical Engineering Society (MetES)', 'Academic', 0, ['Research'], '🔩', '#52525b', 'Connecting the Metallurgical and Materials Engineering community since 1967.'],
+  ['Corporate Interactions Group (CIG)', 'Academic', 0, ['Finance'], '🤝', '#0f172a', 'Connect. Collaborate. Innovate.'],
+  ['SAE IIT Roorkee', 'Academic', 0, ['Robotics', 'Research'], '🏎️', '#dc2626', 'Society of Automotive Engineers collegiate chapter, applying classroom theory to real engineering.'],
+  ['IITR Motorsports', 'Academic', 0, ['Robotics', 'Research'], '🏁', '#991b1b', 'The official Formula Student Electric team of IIT Roorkee.'],
+  ['iGEM IIT Roorkee', 'Academic', 0, ['Research'], '🧬', '#059669', 'A bunch of passionate engineers coding biology.'],
+  ['ASME Student Chapter', 'Academic', 0, ['Research', 'Robotics'], '⚙️', '#475569', 'For students of Mechanical and Industrial Engineering.'],
+  ['ChESS', 'Academic', 0, ['Research'], '⚗️', '#7c3aed', 'The Chemical Engineering Students\' Society, linking students with department faculty.'],
+  ['Electrical Engineering Students\' Society', 'Academic', 0, ['Electronics'], '💡', '#ca8a04', 'Student-run body connecting EE students and faculty.'],
+  ['MIESS', 'Academic', 0, ['Research'], '🔧', '#57534e', 'Mechanical and Industrial department student society, running since the 1980s.'],
+  ['Civil Engineering Consortium', 'Academic', 0, ['Research'], '🏗️', '#78716c', 'Community for civil engineers sharing projects and technical advances.'],
+  ['AWWA Student Chapter', 'Academic', 0, ['Research'], '💧', '#0284c7', 'American Water Works Association chapter for young water professionals.'],
+  ['E-Cell IIT Roorkee', 'Academic', 0, ['Finance', 'Hackathon'], '🚀', '#ea580c', 'Student-led entrepreneurship cell and the team behind E-Summit.'],
+  ['Geek Gazette', 'Academic', 0, ['Research', 'Reading'], '📰', '#334155', 'The official technical magazine of IIT Roorkee.'],
+  ['ShARE IIT Roorkee', 'Academic', 0, ['Finance', 'Research'], '📈', '#4338ca', 'Sharing Analysis of Regional Economies: conversations on economic issues with global leaders.'],
+  ['Hobbies Club', 'Hobbies', 0, ['Photography', 'Robotics'], '🔭', '#6d28d9', 'Star-gazing, philately, numismatics and more.'],
+  ['Photography Section', 'Hobbies', 0, ['Photography', 'Camera', 'Photowalk'], '📸', '#1f2937', 'One of the most active groups on campus.'],
+  ['Fine Arts Section', 'Hobbies', 0, ['Art', 'Culture'], '🖌️', '#be185d', 'Painting, sketching and exhibitions.'],
+  ['Audio Section', 'Hobbies', 0, ['Music', 'Podcast'], '🎧', '#7e22ce', 'DJing, music production, RJing and podcasts.'],
+  ['Cinematic Section', 'Hobbies', 0, ['Movies'], '🎥', '#b91c1c', 'Filmmaking at IIT Roorkee.'],
+  ['Literary Section', 'Hobbies', 0, ['Reading', 'Books'], '✍️', '#92400e', 'Words, writing and everything literary.'],
+  ['Culinary Club', 'Hobbies', 0, ['Food', 'Culture'], '🍳', '#c2410c', 'Working toward a student-run sustainable café where cultures and cuisines meet.'],
+  ['Fashion Society', 'Hobbies', 0, ['Art', 'Photography'], '👗', '#db2777', 'Design, modelling, photography and runway.'],
+  ['Himalayan Explorers\' Club (HEC)', 'Hobbies', 0, ['Cycling', 'Sports'], '🏔️', '#0f766e', 'Pioneering trekking, mountaineering and adventure at IIT Roorkee.'],
+  ['IITR ESports', 'Entertainment', 0, ['Gaming', 'Esports', 'Games'], '🕹️', '#7c3aed', 'Student-run society for competitive gaming on campus and beyond.'],
+  ['Official IITR Pokémon Fan Club', 'Entertainment', 0, ['Gaming', 'Games', 'Anime'], '⚡', '#eab308', 'For everyone at IITR who still wants to catch \'em all.'],
+  ['IIT Roorkee Chess Club', 'Sports', 0, ['Chess', 'Games'], '♟️', '#44403c', 'A community of chess enthusiasts at IIT Roorkee.'],
+  ['Athletics IIT Roorkee', 'Sports', 0, ['Running', 'Sports'], '🏃', '#15803d', 'Track and field at IIT Roorkee.'],
+  ['Cultural Council', 'Culture', 1, ['Culture', 'Festivals', 'Music', 'Dance'], '🎭', '#c026d3', 'Cul-Soc: runs the institute\'s cultural events through the year.'],
+  ['Dramatics Section', 'Culture', 1, ['Culture', 'Art'], '🎬', '#9f1239', 'Stage plays and street theatre.'],
+  ['Choreography Section', 'Culture', 1, ['Dance', 'Culture'], '💃', '#e11d48', 'Dance and choreography at IIT Roorkee.'],
+  ['Music Section', 'Culture', 1, ['Music', 'Jam', 'Culture'], '🎵', '#a21caf', '“We are just dumb kids trying to play songs we love.”'],
+  ['Comedy Section', 'Culture', 1, ['Culture', 'Art'], '🎤', '#f59e0b', 'Haste raho, hasate raho.'],
+  ['onRec', 'Culture', 1, ['Podcast', 'Culture'], '🎙️', '#6d28d9', 'The official podcasting club. We love stories.'],
+  ['Programme Management Section', 'Culture', 1, ['Culture', 'Festivals'], '📣', '#ea580c', 'Publicity and coordination across the Cultural Society\'s sections.'],
+  ['Light Section', 'Culture', 1, ['Culture', 'Art'], '🔦', '#ca8a04', 'The people behind the lights at campus shows.'],
+  ['Kshitij', 'Culture', 1, ['Reading', 'Culture', 'Language'], '📜', '#b45309', 'The literary society. Snippets, microtales and much more, since 1992.'],
+  ['Watch Out!', 'Culture', 1, ['Reading', 'Culture'], '🗞️', '#374151', 'Campus magazine, part of the Cultural Council.'],
+  ['SPIC MACAY IIT Roorkee', 'Culture', 1, ['Music', 'Culture', 'Classical'], '🪕', '#7c2d12', 'Society for the Promotion of Indian Classical Music And Culture Amongst Youth.'],
+  ['Sanskrit Club', 'Culture', 1, ['Language', 'Culture'], '🕉️', '#d97706', 'Reviving and promoting the Sanskrit language.'],
+  ['Students\' Technical Council', 'Student Bodies', 0, ['Research', 'Hackathon'], '🧰', '#1d4ed8', 'The body behind IIT Roorkee\'s technical groups.'],
+  ['IRMUN', 'Student Bodies', 0, ['Research'], '🌐', '#0369a1', 'IIT Roorkee Model United Nations: a bunch of geopolitically enthusiastic kids.'],
+  ['Public Policy and Leadership Cell', 'Student Bodies', 0, ['Research'], '📋', '#7f1d1d', 'Students interested in public policy and leadership.'],
+  ['Students\' Affairs Council', 'Student Bodies', 0, ['Culture', 'Elections'], '🏛️', '#1e3a8a', 'Student-led body representing IIT Roorkee\'s student population.'],
+  ['National Service Scheme (NSS)', 'Student Bodies', 0, ['Culture'], '🤝', '#b91c1c', 'Volunteer organisation of over 1,000 members working on community service.'],
+  ['National Cadet Corps (NCC)', 'Student Bodies', 0, ['Sports'], '🎖️', '#3f6212', 'NCC membership for students, as part of the 3 UK CTR regiment.'],
+  ['Unnat Bharat Abhiyan', 'Student Bodies', 0, ['Research'], '🌱', '#15803d', 'Student body focused on rural development and building an inclusive India.'],
+  ['Think India IIT Roorkee', 'Student Bodies', 0, ['Research'], '🇮🇳', '#c2410c', 'Student group working on nation-first initiatives.'],
+];
+
+const IITR_CLUB_MEMBERS = {
+  SDSLabs: ['rohan', 'muskan', 'sneha', 'rahul'],
+  'MDG Space': ['muskan', 'minji', 'arjun'],
+  'Information Management Group (IMG)': ['rohan', 'ananya'],
+  'ACM Student Chapter': ['ananya', 'rohan', 'rahul', 'arjun'],
+  'Google Developer Student Club IITR': ['sneha', 'minji', 'neha', 'arjun'],
+  'IEEE Student Branch': ['meera', 'meerad', 'riya'],
+  'Models and Robotics Section (MaRS)': ['kabir', 'priya', 'arjunn'],
+  'Programming and Algorithms Group (PAG)': ['ananya', 'rahul', 'rohan', 'muskan'],
+  'Physics and Astronomy Club (PaAC)': ['kabir', 'tenzin', 'meerad', 'ananya'],
+  'Data Science Group (DSG)': ['sneha', 'kabir', 'priya'],
+  HELIOS: ['arjunn', 'tenzin'],
+  'Team Robocon IIT Roorkee': ['kabir', 'arjunn', 'karan'],
+  'Economics Circle': ['lalit', 'neha'],
+  'Metallurgical Engineering Society (MetES)': ['dev'],
+  'Corporate Interactions Group (CIG)': ['rohan', 'dev'],
+  'SAE IIT Roorkee': ['kabir', 'karan'],
+  'IITR Motorsports': ['karan', 'priya'],
+  'iGEM IIT Roorkee': ['neha', 'sneha'],
+  'ASME Student Chapter': ['kabir', 'priya'],
+  ChESS: ['meerad'],
+  "Electrical Engineering Students' Society": ['lalit', 'arjunn'],
+  MIESS: ['karan', 'kabir'],
+  'Civil Engineering Consortium': ['dev', 'ishita', 'tenzin'],
+  'AWWA Student Chapter': ['dev', 'ishita'],
+  'E-Cell IIT Roorkee': ['rohan', 'muskan', 'neha', 'dev'],
+  'Geek Gazette': ['sneha', 'ananya'],
+  'ShARE IIT Roorkee': ['lalit', 'rohan', 'neha'],
+  'Hobbies Club': ['tenzin', 'aiko', 'lalit'],
+  'Photography Section': ['riya', 'priya', 'dev', 'ishita', 'tenzin', 'aiko'],
+  'Fine Arts Section': ['ishita', 'priya', 'muskan'],
+  'Audio Section': ['meera', 'minji', 'karan'],
+  'Cinematic Section': ['ishita', 'neha', 'aiko'],
+  'Literary Section': ['sneha', 'meerad', 'kabir'],
+  'Culinary Club': ['neha', 'meerad', 'ananya', 'tenzin', 'riya'],
+  'Fashion Society': ['riya', 'minji'],
+  "Himalayan Explorers' Club (HEC)": ['tenzin', 'dev', 'lalit', 'arjun'],
+  'IITR ESports': ['arjunn', 'rahul', 'rohan', 'muskan'],
+  'Official IITR Pokémon Fan Club': ['rahul', 'muskan', 'aiko', 'arjunn'],
+  'IIT Roorkee Chess Club': ['ananya', 'rahul', 'kabir'],
+  'Athletics IIT Roorkee': ['lalit', 'karan'],
+  'Cultural Council': ['riya', 'meerad', 'lalit', 'neha', 'arjun'],
+  'Dramatics Section': ['neha', 'kabir', 'ishita'],
+  'Choreography Section': ['riya', 'ananya', 'lalit', 'minji'],
+  'Music Section': ['karan', 'meera', 'sneha', 'lalit', 'arjun'],
+  'Comedy Section': ['neha', 'karan', 'rahul'],
+  onRec: ['meera', 'sneha'],
+  'Programme Management Section': ['neha', 'dev'],
+  'Light Section': ['arjunn', 'tenzin'],
+  Kshitij: ['kabir', 'neha'],
+  'Watch Out!': ['ishita', 'sneha'],
+  'SPIC MACAY IIT Roorkee': ['sneha', 'meerad', 'ishita', 'kabir', 'aiko'],
+  'Sanskrit Club': ['sneha', 'priya'],
+  "Students' Technical Council": ['rohan', 'kabir'],
+  IRMUN: ['ishita', 'neha'],
+  'Public Policy and Leadership Cell': ['lalit'],
+  "Students' Affairs Council": ['karan', 'dev'],
+  'National Service Scheme (NSS)': ['lalit', 'neha', 'tenzin'],
+  'National Cadet Corps (NCC)': ['arjunn', 'karan'],
+  'Unnat Bharat Abhiyan': ['neha', 'dev'],
+  'Think India IIT Roorkee': ['kabir'],
+};
+
 const COMMUNITY_MEMBERS = {
   arjun: ['AI/ML Club', 'Football Enthusiasts', 'Photography Club', 'North Indian Culture', 'Cultural Exchange'],
   riya: ['Photography Club', 'Cultural Exchange', 'Music & Jam', 'Electronics Society'],
@@ -244,7 +386,7 @@ export function seed() {
 
     // Communities
     const cid = {};
-    for (const [name, category, cultural, tags, emoji, color, description] of COMMUNITIES) {
+    for (const [name, category, cultural, tags, emoji, color, description] of [...COMMUNITIES, ...IITR_CLUBS]) {
       cid[name] = Number(q.run('INSERT INTO communities (name, description, category, is_cultural, tags, emoji, color) VALUES (?, ?, ?, ?, ?, ?, ?)',
         name, description, category, cultural, J(tags), emoji, color).lastInsertRowid);
     }
@@ -253,6 +395,9 @@ export function seed() {
         const role = ADMINS[name]?.includes(user) ? 'admin' : 'member';
         q.run('INSERT INTO community_members (community_id, user_id, role) VALUES (?, ?, ?)', cid[name], id[user], role);
       }
+    }
+    for (const [name, users] of Object.entries(IITR_CLUB_MEMBERS)) {
+      for (const user of users) q.run('INSERT INTO community_members (community_id, user_id) VALUES (?, ?)', cid[name], id[user]);
     }
 
     for (const [name, tagline, description, emoji, color, topics] of CULTURES) {
@@ -313,7 +458,7 @@ export function seed() {
     act('langex', 'aiko', 'event', 'Cultural', 'Culture', 'Language Exchange', 'Rotating tables: Japanese, Korean, Tamil, Bengali, Hindi. 10 minutes each.', 4, '18:00', 'Library', 20, { tags: ['Language', 'Culture'], cultural: true, emoji: '🗣️' });
     act('dressday', 'riya', 'event', 'Cultural', 'Culture', 'Cultural Dress Day', 'Wear your traditional outfit and join the campus photo walk.', 14, '16:00', 'Campus', 60, { tags: ['Culture', 'Festivals', 'Photography'], cultural: true, emoji: '👘' });
     act('culturaljam', 'lalit', 'event', 'Cultural', 'Culture', 'Cultural Jam', 'Jam session mixing Bihu, Bhangra and Carnatic rhythms.', 10, '19:00', 'OAT', 25, { tags: ['Music', 'Dance', 'Culture'], cultural: true, emoji: '🥁' });
-    act('diwali', 'neha', 'event', 'Cultural', 'Culture', 'Festival Celebration: Diwali', 'Rangoli, diyas and sweets — everyone welcome.', 11, '18:00', 'Campus', 80, { tags: ['Festivals', 'Culture'], cultural: true, emoji: '🪔' });
+    act('diwali', 'neha', 'event', 'Cultural', 'Culture', 'Festival Celebration: Diwali', 'Rangoli, diyas and sweets — everyone welcome.', on('2026-11-08'), '18:00', 'Campus', 80, { tags: ['Festivals', 'Culture'], cultural: true, emoji: '🪔' });
     act('movienight', 'minji', 'event', 'Cultural', 'Culture', 'Movie Night: Spirited Away', 'Japanese animation classic with subtitles, popcorn provided.', 7, '21:00', 'Campus', 40, { tags: ['Movies', 'Anime', 'Culture'], cultural: true, emoji: '🎬' });
 
     // Teach Me Something
@@ -368,6 +513,49 @@ export function seed() {
     member('pastphoto', ['arjun', 'riya', 'dev', 'tenzin']);
     member('pastkorea', ['arjun', 'meera', 'aiko']);
 
+    // Real IITR events. Names and dates are from official sites/Instagram; start times and who joined are demo data.
+    act('sangram', 'karan', 'sports', 'Sports', 'Sports', 'Sangram ’26', 'IIT Roorkee’s annual sports fest, 2–4 October. Listing it here so people can find others to go with.', on('2026-10-02'), '09:00', 'IIT Roorkee', 60, { tags: ['Sports', 'Football', 'Cricket', 'Badminton'], emoji: '🏆' });
+    act('sangramval', 'arjunn', 'sports', 'Sports', 'Games', 'Sangram ’26 Valorant Squad', 'Putting a squad together for the Sangram esports event.', on('2026-10-02'), '18:00', 'IIT Roorkee', 5, { tags: ['Gaming', 'Esports', 'Valorant'], level: 'Intermediate', emoji: '🎮' });
+    act('thomso', 'neha', 'event', 'Cultural', 'Culture', 'Thomso ’26', 'North India’s largest cultural festival, 9–11 October. Going in a group is way more fun, come along.', on('2026-10-09'), '17:00', 'IIT Roorkee', 80, { tags: ['Culture', 'Music', 'Dance', 'Festivals'], cultural: true, emoji: '🎪' });
+    act('treasure', 'aiko', 'event', 'Cultural', 'Culture', 'Thomso Treasure Hunt Team', 'Treasure Hunt is on Day 3 of Thomso. I am new here and do not know the campus at all, so I need teammates who do!', on('2026-10-11'), '11:00', 'IIT Roorkee', 4, { tags: ['Games', 'Culture'], cultural: true, emoji: '🗺️' });
+    act('spicmacay', 'sneha', 'event', 'Cultural', 'Culture', 'SPIC MACAY Intro Talk: What Would You Preserve?', 'Intro talk by the SPIC MACAY chapter on 22 September, 7 PM. Anyone want to walk over together?', on('2026-09-22'), '19:00', 'IIT Roorkee', 20, { tags: ['Culture', 'Music', 'Classical'], cultural: true, emoji: '🪕' });
+    act('pokemon', 'rahul', 'event', 'Hobby', 'Games', 'Pokémon Tournament Team', 'The Official IITR Pokémon Fan Club is running a tournament. Who else is playing? Looking for people to prep and battle with.', on('2026-10-25'), '20:00', 'IIT Roorkee', 4, { tags: ['Gaming', 'Games', 'Pokémon'], emoji: '⚡' });
+    act('matiks', 'muskan', 'event', 'Hobby', 'Games', 'PaAC Matiks Tournament Practice', 'PaAC is organising a Matiks tournament. Practising together in the evenings before it, come get humbled.', on('2026-09-12'), '21:00', 'IIT Roorkee', 8, { tags: ['Games', 'Mathematics', 'Matiks'], emoji: '🧠' });
+    act('headstart3', 'ananya', 'study', 'Study', 'Study', 'PAG Headstart: Lecture 3', 'Lecture 3 of PAG’s Headstart series. Going as a group, and solving the practice problems together afterwards.', on('2026-10-30'), '19:00', 'IIT Roorkee', 60, { tags: ['CP', 'DSA', 'C++'], course: 'DSA', emoji: '🧮' });
+    act('syntaxerror', 'rohan', 'project', 'Project', 'Projects', 'Syntax Error 2026', 'SDSLabs’ 13th annual hackathon, 23–25 October. Offline for IITR students, teams of 1–4 from any branch or year.', on('2026-10-23'), '18:00', 'IIT Roorkee', 80, { lookingFor: ['Frontend', 'ML', 'Design'], skills: ['React', 'Python', 'Figma'], tags: ['Hackathon', 'React', 'AI/ML'], level: 'Intermediate', emoji: '💻' });
+    act('syntaxteam', 'minji', 'project', 'Project', 'Projects', 'Syntax Error Team: Need ML + Backend', 'I do frontend. Need people for ML and backend. Any branch, any year, it is fine if this is your first hackathon.', on('2026-10-23'), '18:30', 'IIT Roorkee', 4, { lookingFor: ['ML', 'Backend'], skills: ['React', 'Python'], tags: ['Hackathon', 'React'], emoji: '🛠️' });
+    act('nascene', 'karan', 'event', 'Hobby', 'Events', 'MIESS Freshers: Nascene', 'MIESS’s official freshers party. 23 September, 5 PM at the MAC Auditorium. Mechanical people, let us go together.', on('2026-09-23'), '17:00', 'MAC Auditorium', 60, { tags: ['Culture', 'Music', 'Dance'], department: 'Mechanical', emoji: '🎉' });
+    act('campuscup', 'rahul', 'event', 'Hobby', 'Games', 'Campus Cup Squad', 'Campus Cup is the college esports league IITR ESports has been sharing. Need players to sign up with.', on('2026-10-27'), '21:00', 'Online', 4, { tags: ['Gaming', 'Esports'], emoji: '🕹️' });
+    act('esummit', 'muskan', 'event', 'Hobby', 'Events', 'E-Summit ’27 Group', 'E-Cell’s E-Summit is 29–31 January. Forming a group to go together and maybe team up for the startup events.', on('2027-01-29'), '10:00', 'IIT Roorkee', 6, { tags: ['Finance', 'Hackathon'], emoji: '🚀' });
+
+    // Student-run hangouts from the group's own photos
+    act('navratri', 'riya', 'event', 'Cultural', 'Culture', 'Navratri at the Mandir', 'Going for the evening aarti and staying for the crowd. Come even if you have never been.', on('2026-10-17'), '19:30', 'Campus Mandir', 40, { tags: ['Festivals', 'Culture', 'Dance'], cultural: true, emoji: '🪔' });
+    act('jampast', 'karan', 'event', 'Cultural', 'Culture', 'Jamming Session', 'Bring whatever you play. If you play nothing, bring your voice.', -9, '19:00', 'MAC', 30, { tags: ['Music', 'Jam', 'Culture'], cultural: true, emoji: '🎸' });
+    act('moviepast', 'neha', 'event', 'Cultural', 'Culture', 'Movie Night: Zindagi Na Milegi Dobara', 'Laptop, fairy lights and way too much Maggi.', -6, '22:00', 'Campus', 6, { tags: ['Movies', 'Culture'], cultural: true, emoji: '🍿' });
+    act('walk', 'lalit', 'event', 'Hobby', 'Hobbies', 'Late Night Walk', 'No plan. Walking around the Main Building, chai at the end if anything is still open.', 2, '23:00', 'Main Building', 12, { tags: ['Culture', 'Sports'], emoji: '🌙' });
+    act('jamnext', 'karan', 'event', 'Cultural', 'Culture', 'Jam Night Round 2', 'Last one went well so we are doing it again. All languages, all instruments.', 6, '19:30', 'MAC', 30, { tags: ['Music', 'Jam', 'Culture'], cultural: true, emoji: '🎶' });
+    act('movienext', 'minji', 'event', 'Cultural', 'Culture', 'Movie Night: Parasite', 'My turn to pick. Korean with subtitles, snacks from wherever you are from.', 4, '21:30', 'Campus', 10, { tags: ['Movies', 'Korean', 'Culture'], cultural: true, emoji: '🎞️' });
+
+    member('sangram', ['arjun', 'kabir', 'arjunn', 'rahul', 'dev', 'lalit', 'meera', 'tenzin']);
+    member('sangramval', ['rahul', 'rohan', 'muskan', 'karan']);
+    member('thomso', ['arjun', 'riya', 'meera', 'lalit', 'meerad', 'minji', 'ishita', 'sneha', 'tenzin']);
+    member('treasure', ['tenzin', 'neha', 'lalit']);
+    member('spicmacay', ['meerad', 'ishita', 'kabir']);
+    member('pokemon', ['aiko', 'arjunn', 'muskan']);
+    member('matiks', ['ananya', 'rahul', 'kabir', 'meerad']);
+    member('headstart3', ['rahul', 'muskan', 'minji', 'sneha', 'arjun', 'arjunn']);
+    member('syntaxerror', ['arjun', 'muskan', 'minji', 'sneha', 'neha', 'kabir', 'ananya', 'rahul', 'meera', 'priya']);
+    member('syntaxteam', ['sneha', 'arjun', 'neha']);
+    member('nascene', ['kabir', 'priya']);
+    member('campuscup', ['arjunn', 'muskan']);
+    member('esummit', ['rohan', 'neha']);
+    member('navratri', ['arjun', 'meera', 'ananya', 'lalit', 'meerad', 'minji', 'priya', 'karan', 'dev']);
+    member('jampast', ['arjun', 'meera', 'sneha', 'lalit', 'minji', 'kabir', 'meerad', 'riya']);
+    member('moviepast', ['aiko', 'ishita', 'tenzin', 'rahul']);
+    member('walk', ['tenzin', 'aiko', 'kabir', 'sneha']);
+    member('jamnext', ['meera', 'lalit', 'sneha', 'minji']);
+    member('movienext', ['aiko', 'neha', 'rahul']);
+
     // Post-event survey responses → testimonials
     const fb = (key, user, rating, met, learned, cultural, again, comment) => q.run(`INSERT INTO feedback (activity_id, user_id, rating, met_new, learned_new, cultural, again, comment, featured)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, aid[key], id[user], rating, met, learned, cultural, again, comment, rating >= 4 && comment.length >= 15 ? 1 : 0);
@@ -391,66 +579,185 @@ export function seed() {
       return Number(info.lastInsertRowid);
     };
     const pid = [];
-    pid.push(post('riya', 2, 'Arts', 'Just finished the photography walk! Met some amazing people from different departments and got some beautiful shots. ✨ Here are a few from the event!', { images: [img('walk1'), img('walk2'), img('walk3')], tags: ['Photography'] }));
+    pid.push(post('riya', 2, 'Arts', 'Just finished the photography walk! Met some amazing people from different departments and got some shots I’m actually happy with. ✨', { tags: ['Photography'] }));
     pid.push(post('kabir', 4, 'Academics', 'Working on the SDR lab today. Anyone interested in discussing the reports together? Let’s form a small group!', { type: 'discussion', tags: ['DSP', 'Electronics'] }));
     const notes = writeDemoPdf('systems-design-notes.pdf', ['System Design Basics', '1. Load balancers and horizontal scaling', '2. Caching: CDN, Redis, cache invalidation', '3. Databases: SQL vs NoSQL, sharding, replication', '4. Queues and async processing', '5. Back-of-the-envelope estimation', 'Shared by Rohan Gupta on Campus Connect']);
     pid.push(post('rohan', 4.5, 'Tech', 'Sharing some notes on system design basics, might be useful for interviews and projects.', { meta: { file: notes }, tags: ['SystemDesign', 'Internship', 'CP'] }));
     pid.push(post('muskan', 5, 'Tech', 'Hackathon team formation! Looking for one frontend dev and one designer for a campus hackathon. #Hackathon #Team #WebDev', { type: 'project', meta: { title: 'Campus Events App', lookingFor: ['Frontend', 'Design'], skills: ['React', 'Figma'], teamSize: '2/4' }, tags: ['Hackathon', 'React'] }));
     pid.push(post('arjunn', 6, 'Sports', 'Does anyone know a good place on campus to practice badminton in the evenings?', { type: 'discussion', tags: ['Badminton', 'Sports'] }));
-    pid.push(post('meera', 7, 'Tech', 'Finally got OFDM working on the Pluto SDR! Constellation after equalization looks clean. 📡', { images: [img('sdr')], tags: ['DSP', 'Electronics'] }));
-    pid.push(post('ishita', 3, 'Culture', 'Onam celebration at SAC! The food, performances and energy were amazing. Here are some glimpses!', { images: [img('onam1'), img('onam2'), img('onam3')], tags: ['Festivals', 'Onam'] }));
+    pid.push(post('meera', 7, 'Tech', 'Finally got OFDM working on the Pluto SDR! Constellation after equalization looks clean. 📡', { tags: ['DSP', 'Electronics'] }));
+    pid.push(post('ishita', hoursSince('2026-08-27T21:00:00+05:30'), 'Culture', 'Onam celebration at SAC! The food, performances and energy were amazing.', { tags: ['Festivals', 'Onam'] }));
     pid.push(post('rahul', 5, 'Culture', 'Language exchange session was so much fun today! Learnt a few basic phrases in Malayalam. Looking forward to the next one!', { tags: ['Language'] }));
-    pid.push(post('neha', 12, 'Culture', 'Sharing some moments from the North East cultural evening. Such incredible performances and food! ✨', { images: [img('ne1'), img('ne2')], tags: ['Culture', 'Festivals'] }));
+    pid.push(post('neha', 12, 'Culture', 'Still thinking about the North East cultural evening. Such incredible performances and food! ✨', { tags: ['Culture', 'Festivals'] }));
     pid.push(post('ananya', 9, 'Academics', 'DSA tip: when a problem says “minimum number of operations” on a grid, think BFS before DP. Saved me in today’s contest. #DSA #CP', { tags: ['DSA', 'CP'] }));
-    pid.push(post('kabir', 20, 'Tech', 'Our line-follower bot finally takes corners without overshooting. PID tuning is an art. 🤖', { images: [img('robot')], tags: ['Robotics', 'Arduino'], community: 'AI/ML Club' }));
+    pid.push(post('kabir', 20, 'Tech', 'Our line-follower bot finally takes corners without overshooting. PID tuning is an art. 🤖', { tags: ['Robotics', 'Arduino'], community: 'AI/ML Club' }));
     pid.push(post('sneha', 26, 'Academics', 'Summarised the transformer paper for the ML reading group — slides linked below.', { type: 'link', link: 'https://arxiv.org/abs/1706.03762', tags: ['ML', 'AI/ML', 'Research'], community: 'AI/ML Club' }));
     pid.push(post('karan', 30, 'Sports', 'Football 5-a-side this Friday at the sports ground. We need two more players!', { type: 'event', meta: { title: 'Football 5-a-side', date: dayOffset(1), time: '17:30', location: 'Sports Ground' }, tags: ['Football'] }));
-    pid.push(post('dev', 36, 'Arts', 'Sunrise from the cycling loop this morning. Worth waking up at 5:30. 🌅', { images: [img('sunrise')], tags: ['Photography', 'Cycling'] }));
+    pid.push(post('dev', 36, 'Arts', 'Sunrise from the cycling loop this morning. Worth waking up at 5:30. 🌅', { tags: ['Photography', 'Cycling'] }));
     pid.push(post('rohan', 40, 'Tech', 'Internship season tips: start applying in August, keep a project you can talk about for 20 minutes, practise mock interviews with friends. #Internship', { type: 'discussion', tags: ['Internship', 'CP'] }));
     pid.push(post('meerad', 44, 'Academics', 'Anyone want to co-author a short paper on speech enhancement with DSP + ML? Looking for 2 collaborators.', { type: 'project', meta: { title: 'Speech Enhancement Paper', lookingFor: ['ML', 'DSP'], skills: ['Python', 'MATLAB'], teamSize: '1/3' }, tags: ['Research', 'DSP', 'ML'] }));
-    pid.push(post('priya', 50, 'Arts', 'Old havelis of Shekhawati — shot during the semester break.', { images: [img('haveli1'), img('haveli2')], tags: ['Photography', 'Rajasthan'], community: 'Photography Club' }));
+    pid.push(post('priya', 50, 'Arts', 'Spent the semester break photographing the old havelis of Shekhawati. Will post the edits once I finish them.', { tags: ['Photography', 'Rajasthan'], community: 'Photography Club' }));
     pid.push(post('minji', 60, 'Culture', 'Should we start a weekly K-drama + Bollywood double feature? 🍿', { type: 'discussion', tags: ['Movies', 'Korean'] }));
     pid.push(post('lalit', 70, 'Events', 'Cultural Jam is back! Bring your instrument or just your voice.', { type: 'event', meta: { title: 'Cultural Jam', date: dayOffset(10), time: '19:00', location: 'OAT' }, tags: ['Music', 'Culture'] }));
     pid.push(post('neha', 3.2, 'Life@Campus', 'Opinion: Should we have more open mics on campus? I feel there’s so much talent here beyond just tech!', { type: 'poll', meta: { poll: { options: ['Yes, every week!', 'Once a month is enough', 'Only during fests'] } }, tags: ['Music'] }));
     pid.push(post('karan', 26, 'Politics', 'Student council elections are next week. What should the new council prioritise — mess food, hostel Wi-Fi or more cultural funding? Drop your thoughts 👇', { type: 'discussion', tags: ['Elections'] }));
     pid.push(post('muskan', 80, 'Memes', 'When the code compiles on the first try during the hackathon demo 😎', { tags: ['Hackathon'] }));
     pid.push(post('aiko', 90, 'Life@Campus', 'One month in India: the chai, the warmth and the cricket obsession. Thank you everyone for making me feel at home!', { tags: ['Culture'] }));
-    pid.push(post('tenzin', 100, 'Sports', 'Morning cycling group is growing — 8 riders last Sunday!', { images: [img('cycle')], tags: ['Cycling'], community: 'Cycling Group' }));
+    pid.push(post('tenzin', 100, 'Sports', 'Morning cycling group is growing — 8 riders last Sunday!', { tags: ['Cycling'], community: 'Cycling Group' }));
 
     // Cultural cards / mini stories
-    const story = (user, hours, cat, content, image, tags) => pid.push(post(user, hours, 'Culture', content, { kind: 'story', story: cat, images: image ? [img(image)] : [], tags }));
-    story('ananya', 8, 'Food From My Home', 'Appam with stew is Kerala’s answer to comfort food — lacy edges, soft centre and coconut-milk stew for Sunday breakfasts.', 'appam', ['Food', 'Kerala']);
-    story('karan', 14, 'Festival Stories', 'Lohri nights: bonfires, popcorn, rewri and everyone singing “Sunder Mundriye” around the fire.', 'lohri', ['Festivals', 'Punjab']);
-    story('sneha', 22, 'Did You Know', 'Did you know? Pongal is celebrated over four days, and the dish is named after the festival — “pongal” means “to boil over”.', 'pongal', ['Festivals', 'Tamil Nadu']);
-    story('priya', 30, 'Traditional Games', 'Gilli-danda was our summer-vacation cricket in Rajasthan. Two sticks, endless arguments about whether it was out.', 'gilli', ['Games', 'Rajasthan']);
-    story('meerad', 34, 'Local Music', 'Rabindrasangeet is the soundtrack of every Bengali home — Tagore wrote over 2,000 songs!', 'tagore', ['Music', 'Bengal']);
-    story('lalit', 48, 'Regional Traditions', 'The Gamosa — a white cloth with red borders — is gifted in Assam as a mark of respect. You’ll see it at every Bihu.', 'gamosa', ['Traditions', 'Assam']);
-    story('aiko', 56, 'Festival Stories', 'Hanami: we picnic under cherry blossoms every spring. The blooms last only a week, so everyone rushes out!', 'sakura', ['Festivals', 'Japan']);
-    story('minji', 66, 'Food From My Home', 'Kimchi-making (kimjang) is a family event every November — dozens of cabbages, all hands on deck.', 'kimchi', ['Food', 'Korea']);
-    story('tenzin', 76, 'Food From My Home', 'Momos in Sikkim come with a fiery tomato-chilli achar. Thukpa on a cold evening is unbeatable.', 'momos', ['Food', 'Sikkim']);
-    story('neha', 86, 'Regional Traditions', 'Chhath Puja: offering prayers to the setting and rising sun from the riverbank. The thekua is the best part!', 'chhath', ['Festivals', 'Bihar']);
+    const story = (user, hours, cat, content, tags) => pid.push(post(user, hours, 'Culture', content, { kind: 'story', story: cat, tags }));
+    story('ananya', 8, 'Food From My Home', 'Appam with stew is Kerala’s answer to comfort food — lacy edges, soft centre and coconut-milk stew for Sunday breakfasts.', ['Food', 'Kerala']);
+    story('karan', 14, 'Festival Stories', 'Lohri nights: bonfires, popcorn, rewri and everyone singing “Sunder Mundriye” around the fire.', ['Festivals', 'Punjab']);
+    story('sneha', 22, 'Did You Know', 'Did you know? Pongal is celebrated over four days, and the dish is named after the festival — “pongal” means “to boil over”.', ['Festivals', 'Tamil Nadu']);
+    story('priya', 30, 'Traditional Games', 'Gilli-danda was our summer-vacation cricket in Rajasthan. Two sticks, endless arguments about whether it was out.', ['Games', 'Rajasthan']);
+    story('meerad', 34, 'Local Music', 'Rabindrasangeet is the soundtrack of every Bengali home — Tagore wrote over 2,000 songs!', ['Music', 'Bengal']);
+    story('lalit', 48, 'Regional Traditions', 'The Gamosa — a white cloth with red borders — is gifted in Assam as a mark of respect. You’ll see it at every Bihu.', ['Traditions', 'Assam']);
+    story('aiko', 56, 'Festival Stories', 'Hanami: we picnic under cherry blossoms every spring. The blooms last only a week, so everyone rushes out!', ['Festivals', 'Japan']);
+    story('minji', 66, 'Food From My Home', 'Kimchi-making (kimjang) is a family event every November — dozens of cabbages, all hands on deck.', ['Food', 'Korea']);
+    story('tenzin', 76, 'Food From My Home', 'Momos in Sikkim come with a fiery tomato-chilli achar. Thukpa on a cold evening is unbeatable.', ['Food', 'Sikkim']);
+    story('neha', 86, 'Regional Traditions', 'Chhath Puja: offering prayers to the setting and rising sun from the riverbank. The thekua is the best part!', ['Festivals', 'Bihar']);
 
     // Upvotes, saves and comments
     const userKeys = Object.keys(id);
     for (const p of pid) {
       for (const u of pick(userKeys, Math.floor(rand() * 12) + 2)) q.run('INSERT OR IGNORE INTO post_upvotes (post_id, user_id) VALUES (?, ?)', p, id[u]);
     }
-    const commentsText = ['These photos are amazing! Can I join the next one?', 'I’m from a different department but would love to join next time!',
-      'Lovely shots! Which camera did you use?', 'Count me in!', 'This is so helpful, thank you!', 'Saving this for later 🙌', 'Never knew this — thanks for sharing!',
-      'We should do this every month.', 'Let’s discuss after class.', 'Would love to learn more about this.'];
+    const commentsText = ['Never knew this, thanks for sharing!', 'Saving this for later 🙌', 'This is so good.', 'Would love to hear more about this.', 'Same here honestly', 'Nice one!'];
+    const ageOf = (time) => (Date.now() - new Date(`${time}Z`).getTime()) / 3.6e6;
     for (const p of pid) {
-      for (const u of pick(userKeys, Math.floor(rand() * 4))) q.run('INSERT INTO comments (post_id, user_id, content, created_at) VALUES (?, ?, ?, ?)', p, id[u], commentsText[Math.floor(rand() * commentsText.length)], hoursAgo(rand() * 10));
+      const age = ageOf(q.get('SELECT created_at FROM posts WHERE id = ?', p).created_at);
+      for (const u of pick(userKeys, Math.floor(rand() * 4))) q.run('INSERT INTO comments (post_id, user_id, content, created_at) VALUES (?, ?, ?, ?)', p, id[u], commentsText[Math.floor(rand() * commentsText.length)], hoursAgo(rand() * Math.min(10, age)));
     }
     // Poll votes, comment replies and comment likes
     const pollId = q.get("SELECT id FROM posts WHERE type = 'poll'").id;
     for (const [i, u] of userKeys.entries()) if (i % 3 !== 0) q.run('INSERT INTO poll_votes (post_id, user_id, option) VALUES (?, ?, ?)', pollId, id[u], i % 5 === 0 ? 2 : i % 2);
-    for (const c of q.all('SELECT id, post_id, user_id FROM comments')) {
+    for (const c of q.all('SELECT id, post_id, user_id, created_at FROM comments')) {
       for (const u of pick(userKeys, Math.floor(rand() * 8))) q.run('INSERT OR IGNORE INTO comment_likes (comment_id, user_id) VALUES (?, ?)', c.id, id[u]);
       if (rand() < 0.3) {
         const author = q.get('SELECT user_id FROM posts WHERE id = ?', c.post_id).user_id;
-        if (author !== c.user_id) q.run('INSERT INTO comments (post_id, user_id, parent_id, content, created_at) VALUES (?, ?, ?, ?, ?)', c.post_id, author, c.id, ['Thank you! 😊', 'Yes, definitely — join us next time!', 'Glad it helped!', 'Will share more soon.'][Math.floor(rand() * 4)], hoursAgo(rand() * 2));
+        if (author !== c.user_id) q.run('INSERT INTO comments (post_id, user_id, parent_id, content, created_at) VALUES (?, ?, ?, ?, ?)', c.post_id, author, c.id, ['Thank you! 😊', 'Haha thanks', 'Glad you liked it!', 'Will share more soon.'][Math.floor(rand() * 4)], hoursAgo(rand() * Math.min(2, ageOf(c.created_at))));
       }
     }
+    // Casual photo posts and team-up threads, with hand-written comments. [user, text, hoursAgo, index of the comment it replies to]
+    // Posts with a fixed date set `dated`, and their comment times then count hours after the post instead.
+    const moment = (user, hours, topic, content, extra, likes, comments = []) => {
+      const postId = post(user, hours, topic, content, extra);
+      for (const u of pick(userKeys, likes)) q.run('INSERT OR IGNORE INTO post_upvotes (post_id, user_id) VALUES (?, ?)', postId, id[u]);
+      const ids = [];
+      for (const [who, text, h, replyTo] of comments) {
+        ids.push(Number(q.run('INSERT INTO comments (post_id, user_id, parent_id, content, created_at) VALUES (?, ?, ?, ?, ?)',
+          postId, id[who], replyTo === undefined ? null : ids[replyTo], text, hoursAgo(extra.dated ? hours - h : h)).lastInsertRowid));
+      }
+      return postId;
+    };
+    const photo = (file) => [seedPhoto(file)];
+
+    moment('neha', 140, 'Life@Campus', 'zindagi na milegi dobara for the hundredth time. someone in this room had never seen it, so obviously we had to fix that. maggi count: too many', { images: photo('movie-night.png'), tags: ['Movies'], community: 'Movie Buffs' }, 11, [
+      ['aiko', 'That was me! I understand the Spain trip now. Why does nobody warn you about the ending', 138],
+      ['ishita', 'the fairy lights in a bottle are doing a lot for this room', 136],
+      ['neha', 'hostel interior design at its peak', 135, 1],
+      ['rahul', 'next one needs to be a malayalam film, i am taking this personally', 120],
+    ]);
+    moment('riya', 52, 'Life@Campus', 'high tea was supposed to be a quick stop. went back for a second round of fries, no regrets. the dhokla was not bad at all for roorkee', { images: photo('high-tea.png'), tags: ['Food'] }, 14, [
+      ['meerad', 'not bad?? from a Gujarati that is basically a 5 star review', 50],
+      ['riya', 'I said what I said 😌', 49, 0],
+      ['tenzin', 'the pineapple pastry is the real reason anyone attends anything here', 44],
+    ]);
+    moment('kabir', 75, 'Events', 'Ended up at this talk in MAC on a whim. The auditorium was fuller than I expected and it was actually worth skipping my nap for.', { images: photo('mac-talk.png'), tags: ['Events'] }, 8, [
+      ['dev', 'Those seats make it so hard to stay awake though', 73],
+      ['kabir', 'Hence "actually worth it". High praise.', 72, 0],
+    ]);
+    moment('riya', hoursSince('2026-10-17T23:00:00+05:30'), 'Culture', 'the mandir tonight 🪔 purple lights, the whole campus somehow in one place, and half of them had never been to a navratri before. back home we would have danced till 2 but this was really special too', { images: photo('navratri-mandir.png'), tags: ['Festivals', 'Navratri', 'Culture'], community: 'Cultural Exchange', dated: true }, 17, [
+      ['lalit', 'First time for me. The crowd was unreal, I had no idea so many people would come.', 1],
+      ['ananya', 'Riya taught me two garba steps in the queue. I have already forgotten both.', 2],
+      ['riya', 'we practise again before next year then', 2.5, 1],
+      ['karan', 'Who was handling the lights? That colour is insane in photos', 11],
+    ]);
+    moment('neha', hoursSince('2026-10-18T22:30:00+05:30'), 'Culture', 'navratri at the mandir, part two. radha krishna with all these flowers and the little painted pots 😭 somebody clearly spent weeks on this. waited in the line for a while and did not mind at all', { images: photo('navratri-pandal.png'), tags: ['Festivals', 'Navratri', 'Culture'], dated: true }, 13, [
+      ['priya', 'We were right behind you in that line! The flowers at the top were so pretty.', 1],
+      ['minji', 'I asked so many questions and everyone was very patient with me. Thank you!', 12],
+    ]);
+    moment('karan', 210, 'Culture', 'jamming session done. we had a dhol, a guitar, someone singing in bengali and someone singing in korean and somehow it worked for like 40% of the time. group photo before everyone ran to the mess', { images: photo('jam-group.png'), tags: ['Music', 'Jam', 'Culture'], community: 'Music & Jam' }, 19, [
+      ['meera', '40% is generous 😂', 209],
+      ['meerad', 'I have never sung Tagore over a dhol before. I think he would have allowed it.', 205],
+      ['minji', 'Please teach me that Punjabi chorus next time, I only sang the vowels', 200],
+      ['karan', 'deal. round 2 is already on discover', 198, 2],
+    ]);
+    moment('arjun', 30, 'Life@Campus', 'chapo with the seniors last night. they paid, so obviously they get to tell the same internship story three times. no complaints', { images: photo('chapo-seniors.png'), tags: ['Chapo', 'Seniors'] }, 21, [
+      ['rohan', 'It is a very good internship story.', 29],
+      ['arjun', 'it gets better every time, the salary goes up too', 28, 0],
+      ['rahul', 'how do freshers get invited to these', 26],
+      ['rohan', 'Say hi. That is it. Come next time.', 25, 2],
+    ]);
+    moment('lalit', 18, 'Life@Campus', 'late night walk around the main building. it looks completely different at 1am with nobody around. walked with people i only knew from the mess queue and now i know about their entire family. doing another one this week if anyone wants in', { tags: ['Walks'] }, 12, [
+      ['tenzin', 'In. This reminds me of walking back home in Sikkim except less uphill.', 16],
+      ['aiko', 'Is it safe to come if I do not know the route?', 15],
+      ['lalit', 'nobody knows the route, that is the plan. it is on discover if you want to join', 14, 1],
+    ]);
+
+    // Team-up threads
+    moment('rahul', hoursSince('2026-10-23T21:00:00+05:30'), 'Events', 'pokémon tournament by the fan club, who is playing?? i have been preparing for this since i was 8. need people to prep with. #Pokémon #TeamUp', { type: 'event', meta: { title: 'Pokémon Tournament', location: 'IIT Roorkee' }, tags: ['Gaming', 'Games'], community: 'Official IITR Pokémon Fan Club', dated: true }, 10, [
+      ['aiko', 'I know Pokémon names in Japanese only. Is this a problem?', 1],
+      ['rahul', 'no, this is now a language exchange. sending you the group', 1.2, 0],
+      ['arjunn', 'I have only played as a kid but I picked Totodile and I stand by it', 3],
+      ['muskan', 'Let me in. I need a break from Matiks.', 5],
+      ['rahul', 'that makes four. thank you, did not expect this to work', 5.5, 3],
+    ]);
+    moment('muskan', hoursSince('2026-09-08T20:00:00+05:30'), 'Events', 'paac is doing a matiks tournament. i am already embarrassingly into this app. anyone want to practise together in the evenings? #Matiks #PaAC', { type: 'event', meta: { title: 'PaAC Matiks Tournament', location: 'IIT Roorkee' }, tags: ['Games', 'Mathematics'], community: 'Physics and Astronomy Club (PaAC)', dated: true }, 9, [
+      ['ananya', 'Yes. I will beat you and then explain how.', 1],
+      ['kabir', 'I am a mechanical student, so I do arithmetic only under supervision. Count me in.', 3],
+      ['rahul', 'can freshers come?', 6],
+      ['muskan', 'everyone can. we are five now, room in my wing at 9', 6.5, 2],
+    ]);
+    moment('minji', hoursSince('2026-10-19T22:00:00+05:30'), 'Tech', 'Syntax Error this weekend! I do frontend, need ML and backend people. First hackathon for me in India, so please be kind. #SyntaxError #Hackathon', { type: 'project', meta: { title: 'Syntax Error Team', lookingFor: ['ML', 'Backend'], skills: ['React', 'Python'], teamSize: '4/4' }, tags: ['Hackathon', 'React'], community: 'SDSLabs', dated: true }, 16, [
+      ['sneha', 'I can do the ML part. CSE 2nd year, I have my laptop and no plans to sleep.', 1],
+      ['arjun', 'Backend here if you still need one. Flask, and I can pretend to know more.', 2],
+      ['neha', 'do you need someone to make the pitch not boring? i also write python', 4],
+      ['minji', 'Yes to all of you! We are full. Thank you, this was faster than I thought.', 4.5, 2],
+    ]);
+    moment('minji', hoursSince('2026-10-26T01:00:00+05:30'), 'Tech', 'Syntax Error is done. The demo worked exactly once, and it was the one that counted. I met three people from three states this week, and now I know what “chai sutta break” means.', { tags: ['Hackathon', 'SyntaxError'], community: 'SDSLabs', dated: true }, 20, [
+      ['neha', 'we are doing this again next year and we are sleeping this time', 2],
+      ['arjun', 'We are not sleeping next year either', 3, 0],
+      ['rohan', 'The SDS crew pulled off a great weekend. Good work everyone.', 9],
+    ]);
+    moment('rahul', hoursSince('2026-10-30T22:30:00+05:30'), 'Academics', 'headstart lecture 3 by pag. i understood the first 40 minutes, which is a personal best. anyone solving the practice set tomorrow? #PAG #Headstart', { tags: ['CP', 'DSA'], community: 'Programming and Algorithms Group (PAG)', dated: true }, 12, [
+      ['ananya', 'Library at 6. Bring the problem you are stuck on, not the one you already solved.', 1],
+      ['minji', 'Can I come? I got lost around the same minute 40', 2],
+      ['ananya', 'Of course. Everyone gets lost there.', 2.2, 1],
+      ['arjunn', 'Is it too late to catch up if I skipped lecture 2?', 5],
+    ]);
+    moment('aiko', hoursSince('2026-10-08T18:00:00+05:30'), 'Events', 'Thomso Treasure Hunt on Sunday! I have been here very little time and I get lost going to the library. Who wants a teammate with no sense of direction?', { type: 'event', meta: { title: 'Thomso Treasure Hunt', date: '2026-10-11', location: 'IIT Roorkee' }, tags: ['Games', 'Culture'], dated: true }, 15, [
+      ['tenzin', 'I know every shortcut on campus from cycling. I am in.', 1],
+      ['neha', 'and i will ask strangers for directions, this is my one skill', 2],
+      ['lalit', 'Room for one more? Language exchange on the way, you teach me Japanese numbers', 5],
+      ['aiko', 'Yes! Now we are four. Thank you, I was nervous to post this.', 5.5, 2],
+    ]);
+    moment('arjunn', hoursSince('2026-09-15T22:00:00+05:30'), 'Sports', 'need 4 for valorant at sangram. no toxic people, the rest we can work on', { type: 'event', meta: { title: 'Sangram ’26 Valorant Squad', date: '2026-10-02', location: 'IIT Roorkee' }, tags: ['Valorant', 'Esports', 'Gaming'], community: 'IITR ESports', dated: true }, 9, [
+      ['rahul', 'Iron 2 but very motivated', 1],
+      ['rohan', 'I can play Smokes. Haven’t played since final year began, be warned.', 4],
+      ['muskan', 'Sage main, will be mildly passive aggressive only', 9],
+      ['karan', 'I have never played but I am loud on comms. Is that useful?', 20],
+      ['arjunn', 'squad is full then. practice tonight 10pm', 21, 3],
+    ]);
+    moment('muskan', 40, 'Events', 'e-summit ’27 is 29–31 jan. anyone want to go together, maybe team up for the startup events? rohan and neha are in, 3 more spots. #ESummit #TeamUp', { type: 'event', meta: { title: 'E-Summit ’27 Group', date: '2027-01-29', location: 'IIT Roorkee' }, tags: ['Finance', 'Hackathon'], community: 'E-Cell IIT Roorkee' }, 7, [
+      ['dev', 'Final year, last chance to attend one properly. Will think about it.', 36],
+      ['lalit', 'Do you need someone non-CS? I have opinions and a spreadsheet.', 32],
+      ['muskan', 'that is exactly what we need. join from discover', 31, 1],
+    ]);
+
+    // The same moments as Culture page cards
+    const momentStory = (user, hours, cat, content, file, tags, likes) => {
+      const postId = post(user, hours, 'Culture', content, { kind: 'story', story: cat, images: photo(file), tags });
+      for (const u of pick(userKeys, likes)) q.run('INSERT OR IGNORE INTO post_upvotes (post_id, user_id) VALUES (?, ?)', postId, id[u]);
+    };
+    momentStory('meerad', hoursSince('2026-10-18T10:00:00+05:30'), 'Festival Stories', 'At home this is Durga Puja time, so I am usually homesick in October. Then the whole campus turned up at the mandir for Navratri and it helped more than I expected.', 'navratri-mandir.png', ['Festivals', 'Navratri'], 16);
+    momentStory('minji', hoursSince('2026-10-19T11:00:00+05:30'), 'Festival Stories', 'Navratri was new for me. While we waited in line at the mandir, a friend told me the stories of Radha and Krishna. We have nothing like this at home and I loved it.', 'navratri-pandal.png', ['Festivals', 'Navratri'], 14);
+    momentStory('meera', 200, 'Local Music', 'Punjabi dhol, Tagore and K-Pop in one jam. In Punjab every wedding ends up around the dhol, and now apparently so does a Friday in Roorkee.', 'jam-group.png', ['Music', 'Punjab'], 18);
+    momentStory('riya', 48, 'Food From My Home', 'Dhokla at a high tea in Roorkee. My mother would have notes, but for one bite I was back in Gujarat.', 'high-tea.png', ['Food', 'Gujarat'], 12);
+    momentStory('aiko', 130, 'Did You Know', 'Did you know a Bollywood movie night needs Maggi? This is what I was told. My first one was Zindagi Na Milegi Dobara. In Osaka I have never eaten this much noodles for a film.', 'movie-night.png', ['Movies', 'Japan'], 13);
+    momentStory('rohan', 28, 'Did You Know', 'Did you know “chapo” is IITR for a treat? Seniors pay, juniors listen to advice nobody asked for. People from ten states at one table and it still ends in an argument about whose food is best.', 'chapo-seniors.png', ['Chapo', 'Traditions'], 20);
+
     q.run('INSERT INTO post_saves (post_id, user_id) VALUES (?, ?)', pid[2], id.arjun);
     q.run('INSERT INTO searches (user_id, query) VALUES (?, ?)', id.arjun, 'hackathon');
 
@@ -494,13 +801,13 @@ export function seed() {
       }
     }
     const commMsgs = {
-      'Cultural Exchange': [['ananya', 'Here are some pictures from the Onam celebration yesterday! Such a great experience 🎉', 6, img('onam1')],
-        ['rohan', 'Wow! The decorations look amazing. Would love to join next time.', 5.8], ['meera', 'Does anyone have more information about the upcoming food exchange event?', 5.6],
+      'Cultural Exchange': [['ananya', 'Diwali is next week! Are we doing rangoli outside the mess again? 🎉', 6],
+        ['rohan', 'I can bring colours. Count me in.', 5.8], ['meera', 'Does anyone have more information about the upcoming food exchange event?', 5.6],
         ['kabir', 'Yes! I think it’s on Saturday. Will share the poster here soon.', 5.4], ['aiko', 'Can we also plan a cultural dress day this semester?', 1]],
       'AI/ML Club': [['sneha', 'Uploaded the transformer slides to the drive.', 12], ['kabir', 'Here are the resources for this week’s reading group.', 4]],
       'Photography Club': [['dev', 'Golden hour today was unreal.', 30], ['rohan', 'Meetup this Saturday at 5?', 20]],
       'Football Enthusiasts': [['karan', 'Who’s up for a match this week?', 22], ['arjunn', 'Me! Friday works.', 21]],
-      'North Indian Culture': [['karan', 'Lohri bonfire planning thread 🔥', 50], ['priya', 'Sharing some pictures from Teej.', 48, img('teej')]],
+      'North Indian Culture': [['karan', 'Lohri bonfire planning thread 🔥', 50], ['priya', 'We should do something for Teej next year too.', 48]],
     };
     for (const [name, msgs] of Object.entries(commMsgs)) {
       const conv = communityConversation(cid[name]);
@@ -521,6 +828,12 @@ export function seed() {
       foodex: [['neha', 'Please drop the dish you’re bringing here so we avoid duplicates!', 20], ['ananya', 'Appam + stew 🥥', 18], ['aiko', 'Onigiri!', 6]],
       football: [['karan', 'Match this Friday?', 9], ['arjunn', 'Bringing an extra ball.', 2]],
       aiws: [['kabir', 'Please install PyTorch before the session 🙏', 15]],
+      pokemon: [['rahul', 'ok team, four trainers, one working brain between us', 236], ['aiko', 'I made a list of my Pokémon in Japanese. Please translate.', 235], ['arjunn', 'What do I need to know', 234], ['rahul', 'everything. we meet at 8', 233]],
+      matiks: [['muskan', 'Room at 9. Bring your phone and your ego.', 1300], ['kabir', 'I only brought the phone.', 1299], ['ananya', 'Good, you will not need the other one.', 1298]],
+      syntaxteam: [['minji', 'Hello team! I will make the repo.', 340], ['sneha', 'Model is training, please do not touch my laptop', 300], ['arjun', 'API is up. Please do not look at the code.', 290], ['neha', 'i wrote the pitch. we are now a platform.', 270]],
+      treasure: [['aiko', 'Hello team! Where do we meet?', 600], ['tenzin', 'Main Building steps. I will bring water.', 599], ['neha', 'and snacks', 598], ['lalit', 'And I have learnt ichi, ni, san. Ready.', 597]],
+      sangramval: [['arjunn', 'Practice at 10. Please update your agents.', 1058], ['rohan', 'Downloading. Do not wait for me.', 1057], ['karan', 'Testing my mic. HELLO.', 1050]],
+      jamnext: [['karan', 'Who has a spare guitar?', 20], ['meera', 'Mine has five strings now, does that count', 19], ['minji', 'I am bringing the vowels', 12]],
     };
     for (const [key, msgs] of Object.entries(groupMsgs)) {
       const conv = activityConversation(aid[key]);

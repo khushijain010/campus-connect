@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, ArrowRight, Building2, MapPin, Search, Users2, Plus, Snowflake, MessageCircle, Pencil, Globe2, RotateCcw,
-  CalendarDays, GraduationCap, BookHeart,
+  CalendarDays, GraduationCap, BookHeart, History,
 } from 'lucide-react';
 import { api, qs } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -265,6 +265,7 @@ export default function Culture() {
   const [teach, setTeach] = useState(false);
   const { options } = useAuth();
   const events = useApi(() => api.get('/activities?cultural=1&kind=event'));
+  const pastEvents = useApi(() => api.get('/activities?cultural=1&status=completed'));
   const teachList = useApi(() => api.get('/activities?kind=teach'));
   const comms = useApi(() => api.get('/communities?cultural=1'));
   const stories = useApi(() => api.get(`/posts${qs({ kind: 'story', tab: 'latest', category: storyCat })}`), [storyCat]);
@@ -287,6 +288,10 @@ export default function Culture() {
             action={<Link to="/discover?category=Culture" className="see-all">View all →</Link>}
             empty={rowEmpty(events, events.data?.activities, 'No cultural events scheduled.')}>
             {(events.data?.activities || []).map((a) => <ActivityCard key={a.id} activity={a} onChange={patch(events)} showReason={false} />)}
+          </Row>
+          <Row title="Recent Cultural Moments" icon={History} sub="Navratri at the mandir, jam sessions, fests and more"
+            empty={rowEmpty(pastEvents, pastEvents.data?.activities, 'Nothing here yet.')}>
+            {(pastEvents.data?.activities || []).map((a) => <ActivityCard key={a.id} activity={a} onChange={patch(pastEvents)} showReason={false} />)}
           </Row>
           <Row title="Teach Me Something" icon={GraduationCap} sub="Short sessions where students teach a language, dish, dance or tradition"
             action={<button className="btn btn-soft btn-sm" onClick={() => setTeach(true)}><Plus size={15} />Teach something</button>}
